@@ -1,3 +1,13 @@
+'''
+clisocket = socket()                        #创建客户端的socket
+comm_loop:                                  #通信的循环
+    clisocket.sendto()/clisocket.recvfrom() #对话：发送和接收
+clisocket.close()                           #关闭客户端socket
+'''
+
+
+
+
 from socket import *
 
 HOST = 'localhost'
