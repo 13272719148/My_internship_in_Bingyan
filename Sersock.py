@@ -1,5 +1,5 @@
-'''
-from socket import *                    这是创建UDP服务器的伪代码
+'''   
+这是创建UDP服务器的伪代码
 ss = socket()                           #创建服务器socket
 ss.bind()                               #绑定服务器socket 
 inf_loop:                               #服务器的无限循环
@@ -20,6 +20,10 @@ UDPSerSock.bind(ADDR)
 while True:
     print('waiting for message...')
     data, addr = UDPSerSock.recvfrom(BUFSIZ)
-    UDPSerSock.sendto('[%s]%s'%(ctime(),data),addr)
+    data_str = data.decode("UTF-8")
+    data_b_time = '[{}]'.format(ctime())
+    data_b_tosend = data_b_time + data_str
+    data_b_tosend = data_b_tosend.encode("UTF-8")
+    UDPSerSock.sendto(data_b_tosend,addr)
     print('...received from and returned to:',addr)
 UDPSerSock.close()

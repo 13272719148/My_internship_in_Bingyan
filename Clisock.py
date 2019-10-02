@@ -19,12 +19,14 @@ UDPClientSock = socket(AF_INET, SOCK_DGRAM)
 
 while True:
     data = input('>>>')
-    if not data:
+    data_b = data.encode("UTF-8")
+    if not data_b:
         break
-    UDPClientSock.sendto(data,ADDR)
-    data, ADDR = UDPClientSock.recvfrom(BUFSIZ)
-    if not data:
+    UDPClientSock.sendto(data_b,ADDR)
+    data_b, ADDR = UDPClientSock.recvfrom(BUFSIZ)
+    data_b = data_b.decode("UTF-8")
+    if not data_b:
         break
-    print(data)
+    print(data_b)
 
 UDPClientSock.close()
