@@ -19,8 +19,13 @@ UDPSerSock.bind(ADDR)                                    #讲地址绑定到套�
 
 while True:                                              #循环开始
     print('waiting for message...')                      
-    data, addr = UDPSerSock.recvfrom(BUFSIZ)             #获取客户端消息和地址
-    data_str = data.decode("UTF-8")                      #解码消息
+    while True:
+        data_revall = b""
+        data, addr = UDPSerSock.recvfrom(BUFSIZ)
+        data_revall += data
+        if len(data) < BUFSIZ:
+            break                                        #获取客户端消息(完全接收）和地址 
+    data_str = data_revall.decode("UTF-8")                      #解码消息
     data_b_time = '[{}]'.format(ctime())                 #添加时间戳data_b_time
     data_b_tosend = data_b_time + data_str               #拼接字符串
     data_b_tosend = data_b_tosend.encode("UTF-8")        #编码UTF-8字符串
