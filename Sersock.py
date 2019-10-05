@@ -28,8 +28,8 @@ while True:                                              #循环开始
     data_str = data_rcvall.decode("UTF-8")               #解码消息
     print(data_str)                                      #打印消息（其实是用来debug的）
     data_b_time = '[{}]'.format(ctime())                 #添加时间戳data_b_time
-    data_b_tosend = data_b_time + data_str               #拼接字符串
-    data_b_tosend = data_b_tosend.encode("UTF-8")        #编码UTF-8字符串
+    data_b_tosend = data_b_time + data_str               #拼接字段
+    data_b_tosend = data_b_tosend.encode("UTF-8")        #编码UTF-8字段
     for i in range(len(data_b_tosend)//4+1):             #再拆分为长度小于等于4的bytes以echo
         if 4*(i+1) < len(data_b_tosend):
             UDPSerSock.sendto(data_b_tosend[4*i:4*i+4],addr)
