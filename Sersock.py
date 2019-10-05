@@ -11,7 +11,7 @@ from time import ctime
 
 HOST = ''                                                #主机名取任何可用的（对bind的标识
 PORT = 21567                                             #取一个可用端口
-BUFSIZ = 1024                                            #缓存区规定1KB
+BUFSIZ = 4                                               #缓存区规定4字节
 ADDR = (HOST, PORT)                                      #服务器地址
 
 UDPSerSock = socket(AF_INET, SOCK_DGRAM)                 #创建服务器的套接字

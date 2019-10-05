@@ -12,7 +12,7 @@ from socket import *                                      #import socket的every
 
 HOST = 'localhost'                                        #主机名（ip
 PORT = 21567                                              #端口
-BUFSIZ = 1024                                             #设置缓冲区大小
+BUFSIZ = 4                                                #设置缓冲区大小4字节
 ADDR = (HOST,PORT)                                        #地址设定
 
 UDPClientSock = socket(AF_INET, SOCK_DGRAM)               #创建AF_INET族的SOCK_DGRAM的套接字
