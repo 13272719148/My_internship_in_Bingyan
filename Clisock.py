@@ -6,7 +6,7 @@ clisocket.close()                           #关闭客户端socket
 '''
 
 
-
+#-*- coding:unicode_escape -*-
 
 from socket import *                                      #import socket的everything
 
@@ -21,20 +21,34 @@ UDPClientSock = socket(AF_INET, SOCK_DGRAM)               #创建AF_INET族的SO
 
 while True:                                               #发送消息循环
     data = input('>>>')                                   #获取输入信息
-    data_b = data.encode("UTF-8")                         #转换信息为UTF-8码
-    if not data:                                          #若输入信息为空则停止
+    data_b = data.encode("unicode_escape")                         #转换信息为unicode码
+    if not data:                                                   #若输入信息为空则停止
         break
     for i in range(len(data_b)//4+1):                                     #将数据拆分成为长度小于等于4（buffersize）的包，分开发送
-        if 4*(i+1) < len(data_b):
-            UDPClientSock.sendto(data_b[4*i:4*i+4],ADDR)
-        else:
-            UDPClientSock.sendto(data_b[4*i:],ADDR)                       #向ADDR地址（服务器）发送data_b数据报
-        ACK = b""
-        while (i-3) % 4 = 0:
-            ACK_rcv,none = UDPClientSock.recvfrom(BUFSIZ)
-            ACK += ACK_rcv
-            for x in range(i-3,i+1):
-
+        if 4*(i+1) < len(data_b):                                         #对于前面的分组：
+            numbers_of_one = 0                                            #分组中二进制1的数量计数器归零
+            for find_one_numbers in data_b[4*i:4*i+4]:                    #对于分组中的每个元素：
+                find_one_numbers_b = bin(find_one_numbers,2)              #将每个可迭代元素（unicode码）转化为二进制字符串
+                for bit,numbers in enumerate(find_one_numbers_b):         #对于每一个二进制字符串：
+                    if numbers == "1":                                    #如果有一位等于1
+                        numbers_of_one += 1                               #计数器就加1
+            if numbers_of_one % 2 == 1:                                    #如果计数器值为奇数
+                data_tosend = "1".encode("unicode_escape") + data_b[4*i:4*i+4]      #在数据头部加上字符串1的二进制unicode码
+            else:                                                                   #反之
+                data_tosend = "0".encode("unicode_escape") + data_b[4*i:4*i+4]      #数据头部加的为0
+            UDPClientSock.sendto(data_tosend,ADDR)                                  #发送数据报到服务器address
+        else:                                                             #对于最后一个分组：
+            numbers_of_one = 0                                            #操作同前，故省略
+            for find_one_numbers in data_b[4*i:]:
+                find_one_numbers_b = bin(find_one_numbers)
+                for bit,numbers in enumerate(find_one_numbers_b):
+                    if numbers == "1":
+                        numbers_of_one += 1
+            if numbers_of_one % 2 == 1:
+                    data_tosend = "1".encode("unicode_escape") + data_b[4*i:]
+            else:
+                    data_tosend = "0".encode("unicode_escape") + data_b[4*i:]
+            UDPClientSock.sendto(data_tosend,ADDR)
 
 
     data_b_rcvall = b"" 
@@ -43,7 +57,7 @@ while True:                                               #发送消息循环
         data_b_rcvall +=  data_b_rcv                               
         if len(data_b_rcv) < BUFSIZ:
             break
-    data_b_rcvall = data_b_rcvall.decode("UTF-8")                         #对data_b解码
+    data_b_rcvall = data_b_rcvall.decode("unicode_escape")                         #对data_b解码
     print(data_b_rcvall)                                                  #打印data_b内容
 
 UDPClientSock.close()                                                     #关闭客户端socket
