@@ -9,10 +9,12 @@ clisocket.close()                           #关闭客户端socket
 #-*- coding:unicode_escape -*-
 
 from socket import *                                      #import socket的everything
+import time
 
 HOST = 'localhost'                                        #主机名（ip
 PORT = 21568                                              #端口
-BUFSIZ = 4                                                #设置缓冲区大小4字节
+BUFSIZ = 50                                               #设置缓冲区大小50字节
+bytes_tosend = BUFSIZ - 2                                 #每次可以发送的字节数为缓冲大小-2（一位用于奇偶校验，另外的一位用于加序号）
 ADDR = (HOST,PORT)                                        #地址设定
 N = 4                                                     #设定GBN中未确认分组数N的大小
                                             
@@ -24,40 +26,52 @@ while True:                                               #发送消息循环
     data_b = data.encode("unicode_escape")                         #转换信息为unicode码
     if not data:                                                   #若输入信息为空则停止
         break
-    for i in range(len(data_b)//4+1):                                     #将数据拆分成为长度小于等于4（buffersize）的包，分开发送
-        if 4*(i+1) < len(data_b):                                         #对于前面的分组：
-            numbers_of_one = 0                                            #分组中二进制1的数量计数器归零
-            for find_one_numbers in data_b[4*i:4*i+4]:                    #对于分组中的每个元素：
-                find_one_numbers_b = bin(find_one_numbers,2)              #将每个可迭代元素（unicode码）转化为二进制字符串
-                for bit,numbers in enumerate(find_one_numbers_b):         #对于每一个二进制字符串：
-                    if numbers == "1":                                    #如果有一位等于1
-                        numbers_of_one += 1                               #计数器就加1
-            if numbers_of_one % 2 == 1:                                    #如果计数器值为奇数
-                data_tosend = "1".encode("unicode_escape") + data_b[4*i:4*i+4]      #在数据头部加上字符串1的二进制unicode码
-            else:                                                                   #反之
-                data_tosend = "0".encode("unicode_escape") + data_b[4*i:4*i+4]      #数据头部加的为0
-            UDPClientSock.sendto(data_tosend,ADDR)                                  #发送数据报到服务器address
+    for i in range(len(data_b)//bytes_tosend+1):                                                #将数据拆分成为长度小于等于BUFSIZ（buffersize）的包，分开发送
+        if bytes_tosend*(i+1) < len(data_b):                                                    #对于前面的分组：
+            data_tosend = str(i).encode("unicode_escape") + data_b[bytes_tosend*i:bytes_tosend*i+4]   #为要发送的数据封装序列号
+            add_check_and_send(data_tosend,check(data_tosend),ADDR)                                   #加上奇偶检测位并发送数据
         else:                                                             #对于最后一个分组：
-            numbers_of_one = 0                                            #操作同前，故省略
-            for find_one_numbers in data_b[4*i:]:
-                find_one_numbers_b = bin(find_one_numbers)
-                for bit,numbers in enumerate(find_one_numbers_b):
-                    if numbers == "1":
-                        numbers_of_one += 1
-            if numbers_of_one % 2 == 1:
-                    data_tosend = "1".encode("unicode_escape") + data_b[4*i:]
-            else:
-                    data_tosend = "0".encode("unicode_escape") + data_b[4*i:]
-            UDPClientSock.sendto(data_tosend,ADDR)
+            data_tosend = str(i).encode("encode_escape") + data_b[bytes_tosend * i:]
+            add_check_and_send(data_tosend,check(data_tosend),ADDR)
 
-
-    data_b_rcvall = b"" 
-    while True:                                                           #创建了receive_all变量以完全接收消息（大于缓存的）
-        data_b_rcv, ADDR = UDPClientSock.recvfrom(BUFSIZ)                 #分包接收信息和地址（ADDR貌似在这里没用了）再组合
-        data_b_rcvall +=  data_b_rcv                               
-        if len(data_b_rcv) < BUFSIZ:
-            break
-    data_b_rcvall = data_b_rcvall.decode("unicode_escape")                         #对data_b解码
-    print(data_b_rcvall)                                                  #打印data_b内容
+        time_cost = 60.0
+        ack_rev = []
+        '''
+        if (i-3) % 4 == 0 or i == range(len(data_b))//4:
+            time_start = time.time()
+            while time_cost > time.time() - time_start:
+                data,ADDR = UDPClientSock.recvfrom(BUFSIZ)
+                ack_rev.append(data[3])
+                ack_rev.sort()                                            #每四组消息发送后等待ack/超时，但由于多线程技术学习困难暂未实现
+        '''
 
 UDPClientSock.close()                                                     #关闭客户端socket
+
+
+
+def check(data_b):                                                        #定义奇偶检测函数                                                                                                         
+    nums_of_ones = 0                                                      #设置二进制数据中“1”的计数器                                                                          
+    for i in data_b:                                                      #对于数据中的每一个对象      
+        i_b = bin(i)                                                      #用新变量将其转化为二进制来处理
+        for bit,nums in enumerate(i_b):                                   #对i_b进行enumerate迭代
+            if nums == "1":                                               #如果某一位的数字为1
+                nums_of_ones += 1                                         #计数器加1
+    if nums_of_ones % 2 == 1:                                             #如果计数器为奇数
+        return True                                                       #返回True
+    else:                                                                 #反之
+        return False                                                      #返回False
+
+
+def add_check_and_send(data,bool_situation,addr):                         #定义增加奇偶检测位及发送函数
+    if bool_situation == True:                                            #假如布尔参数为True
+        data = "1".encode("unicode_escape") + data                        #在数据头封装“1”
+        UDPClientSock.sendto(data,addr)                                   #发送数据
+        return                                                            #结束函数
+    else:                                                                 #反之
+        data = "0".encode("unicode_escape") + data                        #在数据头封装“0”
+        UDPClientSock.sendto(data,addr)                                   #发送数据
+        return                                                            #结束函数
+
+
+
+
