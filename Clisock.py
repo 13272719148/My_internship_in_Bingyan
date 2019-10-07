@@ -12,42 +12,12 @@ from socket import *                                      #import socket的every
 import time
 
 HOST = 'localhost'                                        #主机名（ip
-PORT = 21568                                              #端口
+PORT = 21569                                              #端口
 BUFSIZ = 50                                               #设置缓冲区大小50字节
 bytes_tosend = BUFSIZ - 2                                 #每次可以发送的字节数为缓冲大小-2（一位用于奇偶校验，另外的一位用于加序号）
-ADDR = (HOST,PORT)                                        #地址设定
-N = 4                                                     #设定GBN中未确认分组数N的大小
-                                            
-
+ADDR = (HOST,PORT)                                        #地址设定                                            
 UDPClientSock = socket(AF_INET, SOCK_DGRAM)               #创建AF_INET族的SOCK_DGRAM的套接字
-
-while True:                                               #发送消息循环
-    data = input('>>>')                                   #获取输入信息
-    data_b = data.encode("unicode_escape")                         #转换信息为unicode码
-    if not data:                                                   #若输入信息为空则停止
-        break
-    for i in range(len(data_b)//bytes_tosend+1):                                                #将数据拆分成为长度小于等于BUFSIZ（buffersize）的包，分开发送
-        if bytes_tosend*(i+1) < len(data_b):                                                    #对于前面的分组：
-            data_tosend = str(i).encode("unicode_escape") + data_b[bytes_tosend*i:bytes_tosend*i+4]   #为要发送的数据封装序列号
-            add_check_and_send(data_tosend,check(data_tosend),ADDR)                                   #加上奇偶检测位并发送数据
-        else:                                                             #对于最后一个分组：
-            data_tosend = str(i).encode("encode_escape") + data_b[bytes_tosend * i:]
-            add_check_and_send(data_tosend,check(data_tosend),ADDR)
-
-        time_cost = 60.0
-        ack_rev = []
-        '''
-        if (i-3) % 4 == 0 or i == range(len(data_b))//4:
-            time_start = time.time()
-            while time_cost > time.time() - time_start:
-                data,ADDR = UDPClientSock.recvfrom(BUFSIZ)
-                ack_rev.append(data[3])
-                ack_rev.sort()                                            #每四组消息发送后等待ack/超时，但由于多线程技术学习困难暂未实现
-        '''
-
-UDPClientSock.close()                                                     #关闭客户端socket
-
-
+windows_bit = 4                                           #GBN协议窗口大小为
 
 def check(data_b):                                                        #定义奇偶检测函数                                                                                                         
     nums_of_ones = 0                                                      #设置二进制数据中“1”的计数器                                                                          
@@ -71,6 +41,34 @@ def add_check_and_send(data,bool_situation,addr):                         #定�
         data = "0".encode("unicode_escape") + data                        #在数据头封装“0”
         UDPClientSock.sendto(data,addr)                                   #发送数据
         return                                                            #结束函数
+
+
+while True:                                                               #发送消息循环
+    data = input('>>>')                                                   #获取输入信息
+    data_b = data.encode("unicode_escape")                                #转换信息为unicode码
+    if not data:                                                          #若输入信息为空则停止
+        break
+    for i in range(len(data_b)//bytes_tosend+1):                                                #将数据拆分成为长度小于等于BUFSIZ（buffersize）的包，分开发送
+        if bytes_tosend*(i+1) < len(data_b):                                                    #对于前面的分组：
+            data_tosend = str(i).encode("unicode_escape") + data_b[bytes_tosend*i:bytes_tosend*i+4]   #为要发送的数据封装序列号
+            add_check_and_send(data_tosend,check(data_tosend),ADDR)                                   #加上奇偶检测位并发送数据
+        else:                                                                                         #对于最后一个分组：
+            data_tosend = str(i).encode("unicode_escape") + data_b[bytes_tosend * i:]                  #同上
+            add_check_and_send(data_tosend,check(data_tosend),ADDR)
+
+        time_cost = 10.0                                                                              #设定10s为超时时间                          
+        ack_rev = []                                                                                  #设定ack的列表容器
+        '''                                                                                           
+        if (i-3) % windows_bit == 0 or i == range(len(data_b))//4:                      
+            time_start = time.time()
+            while time_cost > time.time() - time_start:
+                data,ADDR = UDPClientSock.recvfrom(BUFSIZ)
+                ack_rev.append(data[3])
+                ack_rev.sort()                                            #每四组消息发送后同时等待ack超时，但由于多线程技术学习困难暂未实现，暂时写下逻辑
+        '''
+
+UDPClientSock.close()                                                     #关闭客户端socket
+
 
 
 
